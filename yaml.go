@@ -39,6 +39,7 @@ func Marshal(o interface{}) ([]byte, error) {
 // JSONOpt is a decoding option for decoding from JSON format.
 type JSONOpt func(*json.Decoder) *json.Decoder
 
+// UnmarshalMultipleDocuments unmarshal a YAML input that contains multiple Yaml documents into an array of object.
 func UnmarshalMultipleDocuments[T interface{}](y []byte, docs *[]T, opts ...JSONOpt) error {
 	dec := yaml.NewDecoder(bytes.NewReader(y))
 	for {
