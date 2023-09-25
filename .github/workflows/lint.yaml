@@ -10,7 +10,9 @@ jobs:
   lint:
     name: golangci-lint
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        go: [ "1.18" ]
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -18,4 +20,4 @@ jobs:
       - name: Lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.46
+          version: v1.49
