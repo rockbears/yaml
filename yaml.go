@@ -5,7 +5,6 @@
 // uses json.Marshal and json.Unmarshal to convert to or from the struct. This
 // means that it effectively reuses the JSON struct tags as well as the custom
 // JSON methods MarshalJSON and UnmarshalJSON unlike go-yaml.
-//
 package yaml // import "github.com/rockbears/yaml"
 
 import (
@@ -32,7 +31,6 @@ func Marshal(o interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error converting JSON to YAML: %v", err)
 	}
-
 	return y, nil
 }
 
@@ -108,21 +106,25 @@ func JSONToYAML(j []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Marshal this object into YAML.
-	return yaml.Marshal(jsonObj)
+	var b bytes.Buffer
+	yamlEncode := yaml.NewEncoder(&b)
+	yamlEncode.SetIndent(2)
+	if err := yamlEncode.Encode(&jsonObj); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
 
 // YAMLToJSON converts YAML to JSON. Since JSON is a subset of YAML,
 // passing JSON through this method should be a no-op.
 //
 // Things YAML can do that are not supported by JSON:
-// * In YAML you can have binary and null keys in your maps. These are invalid
-//   in JSON. (int and float keys are converted to strings.)
-// * Binary data in YAML with the !!binary tag is not supported. If you want to
-//   use binary data with this library, encode the data as base64 as usual but do
-//   not use the !!binary tag in your YAML. This will ensure the original base64
-//   encoded data makes it all the way through to the JSON.
-//
+//   - In YAML you can have binary and null keys in your maps. These are invalid
+//     in JSON. (int and float keys are converted to strings.)
+//   - Binary data in YAML with the !!binary tag is not supported. If you want to
+//     use binary data with this library, encode the data as base64 as usual but do
+//     not use the !!binary tag in your YAML. This will ensure the original base64
+//     encoded data makes it all the way through to the JSON.
 func YAMLToJSON(y []byte) ([]byte, error) { //nolint:revive
 	dec := yaml.NewDecoder(bytes.NewReader(y))
 	return yamlToJSON(dec, nil)

@@ -434,3 +434,24 @@ b: bar3
 	require.Equal(t, "foo2", docs[1].A)
 	require.Equal(t, "foo3", docs[2].A)
 }
+
+type Object struct {
+	Address struct {
+		Street string `json:"street"`
+	} `json:"address"`
+	Name string `json:"name"`
+}
+
+func TestMarshalIdent(t *testing.T) {
+	value := `address:
+  street: bar
+name: foo
+`
+	var obj Object
+	require.NoError(t, Unmarshal([]byte(value), &obj))
+
+	result, err := Marshal(obj)
+	require.NoError(t, err)
+	require.Equal(t, value, string(result))
+
+}
