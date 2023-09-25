@@ -68,9 +68,7 @@ func TestUnmarshal(t *testing.T) {
 	y := []byte(``)
 	s1 := UnmarshalString{}
 	err := Unmarshal(y, &s1)
-	if !errors.Is(err, io.EOF) {
-		t.Errorf("error must be EOF")
-	}
+	require.True(t, errors.Is(err, io.EOF))
 
 	y = []byte("a: 1")
 	s1 = UnmarshalString{}

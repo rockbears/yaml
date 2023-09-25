@@ -10,12 +10,12 @@ package yaml // import "github.com/rockbears/yaml"
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"reflect"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,12 +24,12 @@ import (
 func Marshal(o interface{}) ([]byte, error) {
 	j, err := json.Marshal(o)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling into JSON: %v", err)
+		return nil, errors.WithStack(err)
 	}
 
 	y, err := JSONToYAML(j)
 	if err != nil {
-		return nil, fmt.Errorf("error converting JSON to YAML: %v", err)
+		return nil, errors.WithStack(err)
 	}
 	return y, nil
 }
@@ -37,13 +37,14 @@ func Marshal(o interface{}) ([]byte, error) {
 // JSONOpt is a decoding option for decoding from JSON format.
 type JSONOpt func(*json.Decoder) *json.Decoder
 
+// UnmarshalMultipleDocuments unmarshal a YAML input that contains multiple Yaml documents into an array of object.
 func UnmarshalMultipleDocuments[T interface{}](y []byte, docs *[]T, opts ...JSONOpt) error {
 	dec := yaml.NewDecoder(bytes.NewReader(y))
 	for {
 		var o T
 		if err := unmarshal(dec, &o, opts); err != nil {
-			if err != io.EOF {
-				return err
+			if !errors.Is(err, io.EOF) {
+				return errors.WithStack(err)
 			}
 			break
 		}
@@ -66,12 +67,12 @@ func unmarshal(dec *yaml.Decoder, o interface{}, opts []JSONOpt) error {
 		if errors.Is(err, io.EOF) {
 			return err
 		}
-		return fmt.Errorf("error converting YAML to JSON: %v", err)
+		return errors.Wrap(err, "error converting YAML to JSON")
 	}
 
 	err = jsonUnmarshal(bytes.NewReader(j), o, opts...)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling JSON: %v", err)
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -87,7 +88,7 @@ func jsonUnmarshal(r io.Reader, o interface{}, opts ...JSONOpt) error {
 		d = opt(d)
 	}
 	if err := d.Decode(&o); err != nil {
-		return fmt.Errorf("while decoding JSON: %v", err)
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -103,7 +104,7 @@ func JSONToYAML(j []byte) ([]byte, error) {
 	// number type, so we can preserve number type throughout this process.
 	err := yaml.Unmarshal(j, &jsonObj)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	var b bytes.Buffer
@@ -134,7 +135,7 @@ func yamlToJSON(dec *yaml.Decoder, jsonTarget *reflect.Value) ([]byte, error) {
 	// Convert the YAML to an object.
 	var yamlObj interface{}
 	if err := dec.Decode(&yamlObj); err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// YAML objects are not completely compatible with JSON objects (e.g. you
@@ -143,7 +144,7 @@ func yamlToJSON(dec *yaml.Decoder, jsonTarget *reflect.Value) ([]byte, error) {
 	// incompatibilities happen along the way.
 	jsonObj, err := convertToJSONableObject(yamlObj, jsonTarget)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// Convert this object to JSON and return the data.
@@ -202,8 +203,8 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 					keyString = "false"
 				}
 			default:
-				return nil, fmt.Errorf("unsupported map key of type: %s, key: %+#v, value: %+#v",
-					reflect.TypeOf(k), k, v)
+				return nil, errors.WithStack(fmt.Errorf("unsupported map key of type: %s, key: %+#v, value: %+#v",
+					reflect.TypeOf(k), k, v))
 			}
 			strMap[keyString] = v
 		}
@@ -249,7 +250,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 						jtf := t.Field(f.index[0])
 						typedYAMLObj[k], err = convertToJSONableObject(v, &jtf)
 						if err != nil {
-							return nil, err
+							return nil, errors.WithStack(err)
 						}
 						continue
 					}
@@ -259,14 +260,14 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 					jtv := reflect.Zero(t.Type().Elem())
 					typedYAMLObj[k], err = convertToJSONableObject(v, &jtv)
 					if err != nil {
-						return nil, err
+						return nil, errors.WithStack(err)
 					}
 					continue
 				}
 			}
 			typedYAMLObj[k], err = convertToJSONableObject(v, nil)
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 		}
 		return typedYAMLObj, nil
@@ -294,7 +295,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		for i, v := range typedYAMLObj {
 			arr[i], err = convertToJSONableObject(v, jsonSliceElemValue)
 			if err != nil {
-				return nil, err
+				return nil, errors.WithStack(err)
 			}
 		}
 		return arr, nil
