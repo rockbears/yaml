@@ -107,13 +107,21 @@ func JSONToYAML(j []byte) ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	var b bytes.Buffer
-	yamlEncode := yaml.NewEncoder(&b)
-	//yamlEncode.SetIndent(2)
-	if err := yamlEncode.Encode(&jsonObj); err != nil {
+	// Marshal this object into YAML.
+	yamlBytes, err := yaml.Marshal(jsonObj)
+	if err != nil {
 		return nil, err
 	}
-	return b.Bytes(), nil
+
+	/*
+		var b bytes.Buffer
+		yamlEncode := yaml.NewEncoder(&b)
+		yamlEncode.SetIndent(2)
+		if err := yamlEncode.Encode(&jsonObj); err != nil {
+			return nil, err
+		}
+	*/
+	return yamlBytes, nil
 }
 
 // YAMLToJSON converts YAML to JSON. Since JSON is a subset of YAML,
