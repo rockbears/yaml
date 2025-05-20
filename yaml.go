@@ -109,7 +109,7 @@ func JSONToYAML(j []byte) ([]byte, error) {
 
 	var b bytes.Buffer
 	yamlEncode := yaml.NewEncoder(&b)
-	yamlEncode.SetIndent(2)
+	//yamlEncode.SetIndent(2)
 	if err := yamlEncode.Encode(&jsonObj); err != nil {
 		return nil, err
 	}
